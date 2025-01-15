@@ -1,0 +1,7 @@
+course_registration
+venv
+db.sqlite3
+manage.py
+/courses/__pycache__
+/courses/__init__.py
+/courses/migrations
