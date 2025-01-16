@@ -1,5 +1,6 @@
 from rest_framework import status
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view,permission_classes
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from .models import Course
 from .serializers import CourseSerializer
@@ -7,14 +8,15 @@ from django.shortcuts import render, redirect
 from django.contrib.auth.models import User 
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.hashers import make_password, check_password
-from django.http import HttpResponse
+from rest_framework.permissions import IsAuthenticated, IsAdminUser
+from rest_framework.decorators import api_view, permission_classes
 
 
 @api_view(['POST'])
+@permission_classes([AllowAny])
 def register(request):
     username = request.data.get('username')
     password = request.data.get('password')
-
 
     if not username or not password:
         return Response(
@@ -27,7 +29,6 @@ def register(request):
             {"detail": "Username is already taken."},
             status=status.HTTP_400_BAD_REQUEST
         )
-
     hashed_password = make_password(password)
 
     user = User.objects.create(username=username, password=hashed_password)
@@ -40,33 +41,35 @@ def register(request):
 
 
 @api_view(['POST'])
+@permission_classes([AllowAny])
 def user_login(request):
     username = request.data.get('username')
     password = request.data.get('password')
+
     if not username or not password:
         return Response(
             {"detail": "Username and password are required."},
             status=status.HTTP_400_BAD_REQUEST
         )
+    
     user = authenticate(request, username=username, password=password)
     
     if user is not None:
         login(request, user)
         user_data = {
             "username": user.username,
-            "password": user.password,  
         }
         return Response(user_data, status=status.HTTP_200_OK)  
-    else:
-        return Response(
+    
+    return Response(
         {"detail": "Invalid credentials."},
         status=status.HTTP_400_BAD_REQUEST
     )
 
-
    
 
 @api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated, IsAdminUser])
 def course_list(request):
     if request.method == 'GET':
         courses = Course.objects.all()
@@ -81,6 +84,7 @@ def course_list(request):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['PUT'])
+@permission_classes([IsAuthenticated, IsAdminUser])
 def course_update(request, pk):
     try:
         course = Course.objects.get(pk=pk)
@@ -94,6 +98,7 @@ def course_update(request, pk):
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['DELETE'])
+@permission_classes([IsAuthenticated, IsAdminUser])
 def course_delete(request, pk):
     try:
         course = Course.objects.get(pk=pk)
