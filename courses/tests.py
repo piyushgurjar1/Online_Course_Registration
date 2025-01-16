@@ -3,6 +3,7 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 from django.contrib.auth.models import User
 from .models import Course
+
 class UserRegistrationLoginTests(APITestCase):
 
     def test_user_registration(self):
@@ -18,7 +19,7 @@ class UserRegistrationLoginTests(APITestCase):
         user = User.objects.get(username='testuser')
         self.assertIsNotNone(user)
     
-    def test_user_registration(self):
+    def test_user_registration_existing_user(self):
         User.objects.create(username='existinguser', password='password123')
         
         url = reverse('register')
@@ -46,8 +47,7 @@ class UserRegistrationLoginTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['username'], 'testuser')
 
-    
-    def test_user_invalid(self):
+    def test_user_invalid_login(self):
         url = reverse('user_login')  
         data = {
             'username': 'nonexistentuser',
@@ -63,8 +63,9 @@ class UserRegistrationLoginTests(APITestCase):
 class CourseTests(APITestCase):
 
     def setUp(self):
-        self.user = User.objects.create_user(username='testuser', password='testpassword')
-        self.client.login(username='testuser', password='testpassword')
+        # Create an admin user for testing
+        self.admin_user = User.objects.create_superuser(username='admin', password='adminpassword')
+        self.client.login(username='admin', password='adminpassword')  # Login as admin
 
     def test_create_course(self):
         url = reverse('course-list')  
